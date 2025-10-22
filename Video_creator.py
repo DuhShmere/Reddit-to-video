@@ -1,67 +1,30 @@
-# -*- coding: utf-8 -*-
-import os
-from moviepy.editor import ImageClip, AudioFileClip, CompositeVideoClip
-from PIL import Image, ImageDraw, ImageFont
-from TTS_audio import generate_tts
+from create_video_from_text import create_video_from_text
+import praw
 
-def create_text_image(text, filename="text_image.png", size=(1280, 720), bg_color=(0,0,0), text_color=(255,255,255)):
-    """Create an image with the given text using Pillow."""
-    img = Image.new("RGB", size, bg_color)
-    draw = ImageDraw.Draw(img)
+# --- Reddit API setup ---
+reddit = praw.Reddit(
+    client_id=
+    client_secret=
+    user_agent=
+)
 
-    try:
-        font = ImageFont.truetype("Arial.ttf", 60)
-    except:
-        font = ImageFont.load_default()
+def main():
+    # Ask for subreddit; default to TIFU if empty
+    subreddit_name = input("Enter subreddit name (default TIFU): ").strip()
+    if not subreddit_name:
+        subreddit_name = "TIFU"
 
-    margin, offset = 100, 200
-    for line in text.split("\n"):
-        draw.text((margin, offset), line, font=font, fill=text_color)
-        offset += font.getbbox(line)[3] + 20
+    print(f"📥 Fetching top post from r/{subreddit_name} ...")
+    post = next(reddit.subreddit(subreddit_name).hot(limit=1))
+    print(f"✅ Found post: {post.title}")
 
-    img.save(filename)
-    return filename
-
-def create_video_from_text(text):
-    # Step 1: Generate TTS audio
-    audio_file = "output.mp3"
-    print("🔊 Generating TTS audio...")
-    generate_tts(text, audio_file)
-
-    # Step 2: Load audio
-    print("🎵 Loading audio file...")
-    audio_clip = AudioFileClip(audio_file)
-    duration = audio_clip.duration
-
-    # Step 3: Create text image
-    print("🖼️ Creating text image...")
-    text_image_file = create_text_image(text)
-
-    # Step 4: Create video from image
-    print("🎥 Creating video clip...")
-    image_clip = ImageClip(text_image_file).set_duration(duration)
-
-    # Step 5: Combine audio and video
-    print("🎬 Combining audio and video...")
-    final_clip = CompositeVideoClip([image_clip.set_audio(audio_clip)])
-
-    # Step 6: Export final video with audio
-    output_video = "final_video.mp4"
-    print(f"💾 Exporting video to {output_video} ...")
-    final_clip.write_videofile(output_video, fps=24, codec='libx264', audio_codec='aac')
-
-    # Cleanup
-    audio_clip.close()
-    final_clip.close()
-    os.remove(text_image_file)
-    os.remove(audio_file)
-
-    # Step 7: Auto-open video
-    print("📺 Opening video...")
-    os.system(f'open "{output_video}"')
-
-    print("✅ Done!")
+    # Pass title + post text to the video creator
+    create_video_from_text(
+        text=post.selftext,
+        title=post.title,  # Reddit-style title box
+        background_path="Background_reddit/background.mp4",  # change this if your video file has a different name
+        output_video="final_video.mp4"
+    )
 
 if __name__ == "__main__":
-    user_input = input("Enter the text you want to convert to video: ")
-    create_video_from_text(user_input)
+    main()
