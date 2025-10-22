@@ -1,0 +1,7 @@
+gTTS
+pydub
+moviepy
+nltk
+praw
+numpy
+
